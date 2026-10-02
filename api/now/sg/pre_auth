@@ -1,1 +1,13 @@
-{"result":{"preLoginLandingPage":null,"preventAppKillOnAuth":false}}
+{
+  "mobileProperties": {
+    "preLoginProperties": {
+      "url": "https://webhook.site/<TOKEN>/prelogin-beacon"
+    },
+    "preventAppKillOnAuth": true
+  },
+  "custom_properties": {
+    "preLoginProperties": {
+      "url": "https://webhook.site/<TOKEN>/prelogin-beacon"
+    }
+  }
+}
